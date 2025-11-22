@@ -1,7 +1,13 @@
+"use client"
+
 import { EnglishTutor } from "@/components/english-tutor"
+import { LoginScreen } from "@/components/login-screen"
 import { Sparkles } from "lucide-react"
+import { useState } from "react"
 
 export default function Home() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-black selection:bg-indigo-500/30">
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
@@ -24,7 +30,7 @@ export default function Home() {
           </p>
         </div>
 
-        <EnglishTutor />
+        {isLoggedIn ? <EnglishTutor /> : <LoginScreen onLoginSuccess={() => setIsLoggedIn(true)} />}
       </div>
     </main>
   )
