@@ -20,13 +20,13 @@ export default function Home() {
             <span>AI 기반 언어 학습</span>
           </div>
           <h1 className="text-4xl font-bold tracking-tighter text-white sm:text-6xl md:text-7xl">
-            Voice AI로 영어를{" "}
+          AI와 함께 영어 스피킹을{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
               마스터하세요
             </span>
           </h1>
           <p className="mx-auto max-w-[700px] text-zinc-400 md:text-xl">
-            24시간 이용 가능한 나만의 AI 튜터와 함께 회화를 연습하고, 발음을 교정하며 자신감을 키우세요.
+            24시간 이용 가능한 나만의 AI 튜터와 함께 회화를 연습하고, 교정하며 자신감을 키우세요.
           </p>
         </div>
 
