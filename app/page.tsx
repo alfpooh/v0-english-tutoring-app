@@ -9,7 +9,7 @@ import { type Language, t } from "@/lib/i18n"
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [language, setLanguage] = useState<Language>("ko")
+  const [language, setLanguage] = useState<Language>("en")
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-black selection:bg-indigo-500/30">
