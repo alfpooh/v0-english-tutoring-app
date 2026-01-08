@@ -9,17 +9,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
 import { Label } from "@/components/ui/label"
 import { Loader2, Mail, Key } from "lucide-react"
+import { type Language, t } from "@/lib/i18n"
 
 interface LoginScreenProps {
   onLoginSuccess: () => void
+  language: Language
 }
 
-export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
+export function LoginScreen({ onLoginSuccess, language }: LoginScreenProps) {
   const [step, setStep] = useState<"email" | "verification">("email")
   const [email, setEmail] = useState("")
   const [otp, setOtp] = useState("")
   const [idCode, setIdCode] = useState("")
-  const [otpHash, setOtpHash] = useState("") // New state to store the hash
+  const [otpHash, setOtpHash] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -43,10 +45,10 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
         data = JSON.parse(text)
       } catch (parseError) {
         console.error("[v0] JSON Parse Error. Status:", res.status, "Response:", text)
-        throw new Error(`서버 오류가 발생했습니다. (${res.status})`)
+        throw new Error(`Server error (${res.status})`)
       }
 
-      if (!res.ok) throw new Error(data.error || "인증 코드 발송에 실패했습니다.")
+      if (!res.ok) throw new Error(data.error || t(language, "sendingFailed"))
 
       if (data.otpHash) {
         setOtpHash(data.otpHash)
@@ -87,10 +89,10 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
         data = JSON.parse(text)
       } catch (parseError) {
         console.error("[v0] JSON Parse Error. Status:", res.status, "Response:", text)
-        throw new Error(`서버 오류가 발생했습니다. (${res.status})`)
+        throw new Error(`Server error (${res.status})`)
       }
 
-      if (!res.ok) throw new Error(data.error || "로그인에 실패했습니다.")
+      if (!res.ok) throw new Error(data.error || t(language, "loginFailed"))
 
       onLoginSuccess()
     } catch (err: any) {
@@ -105,9 +107,9 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
     <div className="flex flex-col items-center justify-center min-h-[60vh] w-full max-w-md mx-auto p-4">
       <Card className="w-full border-zinc-800 bg-zinc-950/50 backdrop-blur-sm shadow-2xl">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-white">로그인</CardTitle>
+          <CardTitle className="text-2xl font-bold text-white">{t(language, "login")}</CardTitle>
           <CardDescription className="text-zinc-400">
-            {step === "email" ? "이메일 주소를 입력해주세요" : "인증 정보를 입력해주세요"}
+            {step === "email" ? t(language, "enterEmail") : t(language, "enterVerification")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -115,7 +117,7 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
             <form onSubmit={handleEmailSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-zinc-300">
-                  이메일
+                  {t(language, "email")}
                 </Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-2.5 h-5 w-5 text-zinc-500" />
@@ -136,13 +138,13 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
                 disabled={isLoading}
               >
                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                인증 코드 받기
+                {t(language, "getVerificationCode")}
               </Button>
             </form>
           ) : (
             <form onSubmit={handleVerify} className="space-y-6">
               <div className="space-y-2">
-                <Label className="text-zinc-300">인증 코드 (5자리)</Label>
+                <Label className="text-zinc-300">{t(language, "verificationCode")}</Label>
                 <div className="flex justify-center">
                   <InputOTP maxLength={5} value={otp} onChange={(value) => setOtp(value)} className="gap-2">
                     <InputOTPGroup>
@@ -158,7 +160,7 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
 
               <div className="space-y-2">
                 <Label htmlFor="idCode" className="text-zinc-300">
-                  ID 문자 (4자리)
+                  {t(language, "idCode")}
                 </Label>
                 <div className="relative">
                   <Key className="absolute left-3 top-2.5 h-5 w-5 text-zinc-500" />
@@ -166,10 +168,10 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
                     id="idCode"
                     type="text"
                     maxLength={4}
-                    placeholder="ID 문자 입력"
+                    placeholder={t(language, "enterIdCode")}
                     value={idCode}
-                    onChange={(e) => setIdCode(e.target.value)}
-                    className="pl-10 bg-zinc-900/50 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-indigo-500 uppercase"
+                    onChange={(e) => setIdCode(e.target.value.toLowerCase())}
+                    className="pl-10 bg-zinc-900/50 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-indigo-500"
                     required
                   />
                 </div>
@@ -181,7 +183,7 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
                 disabled={isLoading}
               >
                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                시작하기
+                {t(language, "start")}
               </Button>
             </form>
           )}
