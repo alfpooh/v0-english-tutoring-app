@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
 import { Label } from "@/components/ui/label"
-import { Loader2, Mail, Key } from "lucide-react"
+import { Loader2, Mail } from "lucide-react"
 import { type Language, t } from "@/lib/i18n"
 
 interface LoginScreenProps {
@@ -20,7 +20,6 @@ export function LoginScreen({ onLoginSuccess, language }: LoginScreenProps) {
   const [step, setStep] = useState<"email" | "verification">("email")
   const [email, setEmail] = useState("")
   const [otp, setOtp] = useState("")
-  const [idCode, setIdCode] = useState("")
   const [otpHash, setOtpHash] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -77,7 +76,6 @@ export function LoginScreen({ onLoginSuccess, language }: LoginScreenProps) {
           action: "verify-login",
           email,
           otp,
-          idCode,
           otpHash,
         }),
       })
@@ -155,25 +153,6 @@ export function LoginScreen({ onLoginSuccess, language }: LoginScreenProps) {
                       <InputOTPSlot index={4} className="border-zinc-700 text-white" />
                     </InputOTPGroup>
                   </InputOTP>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="idCode" className="text-zinc-300">
-                  {t(language, "idCode")}
-                </Label>
-                <div className="relative">
-                  <Key className="absolute left-3 top-2.5 h-5 w-5 text-zinc-500" />
-                  <Input
-                    id="idCode"
-                    type="text"
-                    maxLength={4}
-                    placeholder={t(language, "enterIdCode")}
-                    value={idCode}
-                    onChange={(e) => setIdCode(e.target.value.toLowerCase())}
-                    className="pl-10 bg-zinc-900/50 border-zinc-800 text-white placeholder:text-zinc-600 focus-visible:ring-indigo-500"
-                    required
-                  />
                 </div>
               </div>
 

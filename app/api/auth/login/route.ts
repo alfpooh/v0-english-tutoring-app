@@ -27,8 +27,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 })
     }
 
-    const { action, email, otp, idCode, otpHash } = body
-    const VALID_ID_CODE = "alfb"
+    const { action, email, otp, otpHash } = body
 
     const resendApiKey = process.env.RESEND_API_KEY
     const resend = resendApiKey ? new Resend(resendApiKey) : null
@@ -66,12 +65,8 @@ export async function POST(req: Request) {
     }
 
     if (action === "verify-login") {
-      if (!otp || !idCode || !email || !otpHash) {
+      if (!otp || !email || !otpHash) {
         return NextResponse.json({ error: "모든 정보를 입력해주세요." }, { status: 400 })
-      }
-
-      if (idCode.toLowerCase() !== VALID_ID_CODE) {
-        return NextResponse.json({ error: "ID 코드가 올바르지 않습니다." }, { status: 401 })
       }
 
       if (otp === "12345") {
