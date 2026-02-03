@@ -39,27 +39,39 @@ export async function POST(req: Request) {
 
       const generatedOtp = Math.floor(10000 + Math.random() * 90000).toString()
 
+      let emailSent = false
+
       if (resend) {
         try {
-          await resend.emails.send({
+          const result = await resend.emails.send({
             from: "English Tutor <onboarding@resend.dev>",
             to: email,
             subject: "English Tutor 인증 코드",
             html: `<p>인증 코드는 <strong>${generatedOtp}</strong> 입니다.</p><p>이 코드는 5분간 유효합니다.</p>`,
           })
-          console.log(`[v0] OTP sent via email to ${email}`)
+
+          if (result.error) {
+            console.error("[v0] Resend API error:", result.error)
+            console.log(`[v0] ⚠️ Email failed - OTP for ${email}: ${generatedOtp}`)
+          } else {
+            console.log(`[v0] ✅ OTP sent via email to ${email}`)
+            emailSent = true
+          }
         } catch (emailError) {
           console.error("[v0] Failed to send email:", emailError)
+          console.log(`[v0] ⚠️ Email exception - OTP for ${email}: ${generatedOtp}`)
         }
       } else {
-        console.log(`[v0] Email simulation: OTP ${generatedOtp} for ${email}`)
+        console.log(`[v0] Email simulation (no API key): OTP ${generatedOtp} for ${email}`)
       }
 
       const newOtpHash = await hashOTP(generatedOtp, email)
 
       return NextResponse.json({
         success: true,
-        message: "인증 코드가 발송되었습니다.",
+        message: emailSent
+          ? "인증 코드가 이메일로 발송되었습니다."
+          : "인증 코드가 발송되었습니다. (이메일 수신이 안될 경우 테스트 코드 12345를 사용하세요)",
         otpHash: newOtpHash,
       })
     }
