@@ -1,7 +1,13 @@
-// This script can be used to verify the API key and create the agent manually if needed.
-// The same logic is implemented in the API route for automatic provisioning.
+// Creates the ElevenLabs tutor agent, or updates its prompt/voice if it already exists.
+// This is the single source of truth for the agent configuration; /api/signed-url only looks it up.
+//
+// Usage: node --env-file=.env.local scripts/setup-agent.mjs
 
-const API_KEY = "sk_dbeab933805d8b9b9db19901478b66a02c5f8e67b0e06dd6";
+const API_KEY = process.env.ELEVENLABS_API_KEY;
+if (!API_KEY) {
+  console.error("ELEVENLABS_API_KEY is not set. Run: node --env-file=.env.local scripts/setup-agent.mjs");
+  process.exit(1);
+}
 const BASE_URL = "https://api.elevenlabs.io/v1/convai";
 const AGENT_NAME = "English Tutor (v0)";
 

@@ -4,12 +4,22 @@ import { EnglishTutor } from "@/components/english-tutor"
 import { LoginScreen } from "@/components/login-screen"
 import { LanguageSelector } from "@/components/language-selector"
 import { Sparkles } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { type Language, t } from "@/lib/i18n"
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [isCheckingSession, setIsCheckingSession] = useState(true)
   const [language, setLanguage] = useState<Language>("en")
+
+  // Restore the login from the session cookie after a reload.
+  useEffect(() => {
+    fetch("/api/auth/session")
+      .then((res) => (res.ok ? res.json() : { loggedIn: false }))
+      .then((data) => setIsLoggedIn(Boolean(data.loggedIn)))
+      .catch(() => setIsLoggedIn(false))
+      .finally(() => setIsCheckingSession(false))
+  }, [])
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-black selection:bg-indigo-500/30">
@@ -40,8 +50,8 @@ export default function Home() {
           <p className="mx-auto max-w-[700px] text-zinc-400 md:text-xl">{t(language, "heroSubtitle")}</p>
         </div>
 
-        {isLoggedIn ? (
-          <EnglishTutor language={language} />
+        {isCheckingSession ? null : isLoggedIn ? (
+          <EnglishTutor language={language} onSessionExpired={() => setIsLoggedIn(false)} />
         ) : (
           <LoginScreen onLoginSuccess={() => setIsLoggedIn(true)} language={language} />
         )}

@@ -12,6 +12,7 @@ import { type Language, t } from "@/lib/i18n"
 
 interface EnglishTutorProps {
   language: Language
+  onSessionExpired?: () => void
 }
 
 interface Evaluation {
@@ -28,7 +29,7 @@ interface VocabularyWord {
   example: string
 }
 
-export function EnglishTutor({ language }: EnglishTutorProps) {
+export function EnglishTutor({ language, onSessionExpired }: EnglishTutorProps) {
   const [connectionStatus, setConnectionStatus] = useState<"disconnected" | "connecting" | "connected">("disconnected")
   const [error, setError] = useState<string | null>(null)
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null)
@@ -101,6 +102,11 @@ export function EnglishTutor({ language }: EnglishTutorProps) {
       await navigator.mediaDevices.getUserMedia({ audio: true })
 
       const response = await fetch("/api/signed-url")
+      if (response.status === 401) {
+        setConnectionStatus("disconnected")
+        onSessionExpired?.()
+        return
+      }
       if (!response.ok) {
         throw new Error("Failed to get signed URL")
       }
@@ -112,7 +118,7 @@ export function EnglishTutor({ language }: EnglishTutorProps) {
       setError(t(language, "cannotStartConversation"))
       setConnectionStatus("disconnected")
     }
-  }, [conversation, language])
+  }, [conversation, language, onSessionExpired])
 
   const stopConversation = useCallback(async () => {
     await conversation.endSession()
