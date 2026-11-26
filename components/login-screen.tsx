@@ -23,6 +23,7 @@ export function LoginScreen({ onLoginSuccess, language }: LoginScreenProps) {
   const [otpHash, setOtpHash] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -52,6 +53,7 @@ export function LoginScreen({ onLoginSuccess, language }: LoginScreenProps) {
       if (data.otpHash) {
         setOtpHash(data.otpHash)
       }
+      setNotice(typeof data.message === "string" ? data.message : null)
 
       setEmail(cleanEmail)
       setStep("verification")
@@ -167,6 +169,9 @@ export function LoginScreen({ onLoginSuccess, language }: LoginScreenProps) {
             </form>
           )}
 
+          {step === "verification" && notice && !error && (
+            <p className="mt-4 text-sm text-zinc-400 text-center">{notice}</p>
+          )}
           {error && <p className="mt-4 text-sm text-red-400 text-center">{error}</p>}
         </CardContent>
       </Card>

@@ -1,108 +1,105 @@
 import { NextResponse } from "next/server"
 import { Resend } from "resend"
+import {
+  ConfigError,
+  SESSION_COOKIE,
+  TEST_OTP,
+  createOtpToken,
+  createSessionToken,
+  generateOtp,
+  isTestOtpAllowed,
+  sessionCookieOptions,
+  verifyOtpToken,
+} from "@/lib/auth"
 
-async function hashOTP(otp: string, email: string) {
-  const encoder = new TextEncoder()
-  const data = encoder.encode(`${otp}-${email}`)
-  const secret = process.env.APP_SECRET || "default-secret-key"
-  const keyData = encoder.encode(secret)
-
-  const key = await crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"])
-
-  const signature = await crypto.subtle.sign("HMAC", key, data)
-
-  return Array.from(new Uint8Array(signature))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("")
-}
+const isProduction = process.env.NODE_ENV === "production"
 
 export async function POST(req: Request) {
-  console.log("[v0] Auth API called")
-
   try {
     let body
     try {
       body = await req.json()
-    } catch (e) {
+    } catch {
       return NextResponse.json({ error: "잘못된 요청 형식입니다." }, { status: 400 })
     }
 
-    const { action, email, otp, otpHash } = body
-
-    const resendApiKey = process.env.RESEND_API_KEY
-    const resend = resendApiKey ? new Resend(resendApiKey) : null
+    const { action, otp, otpHash } = body
+    const email = typeof body.email === "string" ? body.email.trim() : ""
 
     if (action === "request-otp") {
       if (!email || !email.includes("@")) {
         return NextResponse.json({ error: "유효한 이메일 주소를 입력해주세요." }, { status: 400 })
       }
 
-      const generatedOtp = Math.floor(10000 + Math.random() * 90000).toString()
-
+      const generatedOtp = generateOtp()
+      const resendApiKey = process.env.RESEND_API_KEY
       let emailSent = false
 
-      if (resend) {
+      if (resendApiKey) {
         try {
-          const result = await resend.emails.send({
-            from: "English Tutor <onboarding@resend.dev>",
+          const result = await new Resend(resendApiKey).emails.send({
+            from: process.env.RESEND_FROM || "English Tutor <onboarding@resend.dev>",
             to: email,
             subject: "English Tutor 인증 코드",
             html: `<p>인증 코드는 <strong>${generatedOtp}</strong> 입니다.</p><p>이 코드는 5분간 유효합니다.</p>`,
           })
-
           if (result.error) {
-            console.error("[v0] Resend API error:", result.error)
-            console.log(`[v0] ⚠️ Email failed - OTP for ${email}: ${generatedOtp}`)
+            console.error("[auth] Resend API error:", result.error)
           } else {
-            console.log(`[v0] ✅ OTP sent via email to ${email}`)
             emailSent = true
           }
         } catch (emailError) {
-          console.error("[v0] Failed to send email:", emailError)
-          console.log(`[v0] ⚠️ Email exception - OTP for ${email}: ${generatedOtp}`)
+          console.error("[auth] Failed to send email:", emailError)
         }
-      } else {
-        console.log(`[v0] Email simulation (no API key): OTP ${generatedOtp} for ${email}`)
       }
 
-      const newOtpHash = await hashOTP(generatedOtp, email)
+      // Never write OTPs to production logs.
+      if (!emailSent && !isProduction) {
+        console.log(`[auth] (dev) OTP for ${email}: ${generatedOtp}`)
+      }
+
+      if (!emailSent && !isTestOtpAllowed()) {
+        return NextResponse.json(
+          { error: "인증 코드 이메일을 보내지 못했습니다. 잠시 후 다시 시도해주세요." },
+          { status: 502 },
+        )
+      }
 
       return NextResponse.json({
         success: true,
         message: emailSent
           ? "인증 코드가 이메일로 발송되었습니다."
-          : "인증 코드가 발송되었습니다. (이메일 수신이 안될 경우 테스트 코드 12345를 사용하세요)",
-        otpHash: newOtpHash,
+          : `이메일을 보내지 못했습니다. 테스트 코드 ${TEST_OTP}를 사용하세요.`,
+        otpHash: await createOtpToken(generatedOtp, email),
       })
     }
 
     if (action === "verify-login") {
-      if (!otp || !email || !otpHash) {
+      if (typeof otp !== "string" || !email || typeof otpHash !== "string") {
         return NextResponse.json({ error: "모든 정보를 입력해주세요." }, { status: 400 })
       }
 
-      if (otp === "12345") {
-        return NextResponse.json({ success: true })
+      const isTestLogin = isTestOtpAllowed() && otp === TEST_OTP
+      if (!isTestLogin) {
+        const check = await verifyOtpToken(otp, email, otpHash)
+        if (check === "expired") {
+          return NextResponse.json({ error: "인증 코드가 만료되었습니다. 다시 요청해주세요." }, { status: 401 })
+        }
+        if (check !== "ok") {
+          return NextResponse.json({ error: "인증 코드가 올바르지 않습니다." }, { status: 401 })
+        }
       }
 
-      const inputHash = await hashOTP(otp, email)
-
-      if (inputHash !== otpHash) {
-        return NextResponse.json({ error: "인증 코드가 올바르지 않습니다." }, { status: 401 })
-      }
-
-      return NextResponse.json({ success: true })
+      const res = NextResponse.json({ success: true })
+      res.cookies.set(SESSION_COOKIE, await createSessionToken(email), sessionCookieOptions)
+      return res
     }
 
     return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 })
   } catch (error) {
-    console.error("[v0] Auth error:", error)
-    return NextResponse.json(
-      {
-        error: "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
-        details: error instanceof Error ? error.message : String(error),
-      },
-      { status: 500 },
-    )
+    console.error("[auth] Auth error:", error)
+    const message =
+      error instanceof ConfigError ? "서버 설정 오류입니다. 관리자에게 문의해주세요." : "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
